@@ -816,11 +816,6 @@ async def staff_various_load():
     document_data = staff_various_service.get(
         query_filter={"date": working_date.isoformat(), "daytime": daytime}
     )
-    print('++++++++++++++++++++++++++++++++++++')
-    print(document_data)
-    print('++++++++++++++++++++++++++++++++++++')
-
-
     if not document_data:
         staff_various_service.make_blank_document(working_date)
         document_data = staff_various_service.get(
