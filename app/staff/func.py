@@ -5,7 +5,11 @@ from typing import Any
 from flask import flash
 from pymongo.cursor import Cursor
 
-from config import ApeksConfig
+from app.auth.func import has_permission
+from app.core.services.apeks_db_state_departments_service import get_db_apeks_state_departments_service
+from app.core.services.apeks_db_system_branches import get_apeks_db_system_branches_service
+from app.core.services.apeks_db_system_settings import get_apeks_db_system_settings_service
+from config import ApeksConfig, PermissionsConfig
 from ..core.db.staff_models import StaffAllowedFaculty, StaffVariousBusyTypes
 from ..core.services.apeks_db_student_marks_service import (
     get_apeks_db_student_marks_service,
@@ -35,6 +39,7 @@ def process_apeks_stable_staff_data(
     staff_history: dict[str, Any],
     staff_document_data: dict[str, Any],
     state_vacancies: dict[str, Any],
+    branches: dict[str, str]
 ) -> dict:
     """
     Рассчитывает информацию о наличии личного состава подразделений.
@@ -66,6 +71,7 @@ def process_apeks_stable_staff_data(
         if dept_type in staff_data:
             dept_document_data = staff_document_data["departments"].get(dept)
             dept_total = len(dept_data.get("dept_staff_ids", {}))
+            dept_branch_id = dept_data.get("branch_id")
             dept_military_total = len(
                 [
                     item
@@ -109,7 +115,19 @@ def process_apeks_stable_staff_data(
                 "staff_military_total": dept_military_total,
                 "staff_military_absence": dept_military_absence,
                 "staff_military_stock": dept_military_stock,
+                "branch_id": dept_branch_id
             }
+    # TODO далее следует говнокод, который преобразует старую структуру данных с одним подразделением
+    # в структуру, содержащую филиалы:
+    result = {}
+    for depts_by_types in staff_data:
+        for item in staff_data[depts_by_types]:
+            if not result.get(branches[staff_data[depts_by_types][item].get('branch_id')]):
+                result[branches[staff_data[depts_by_types][item].get('branch_id')]] = {}
+            if not result[branches[staff_data[depts_by_types][item].get('branch_id')]].get(depts_by_types):
+                result[branches[staff_data[depts_by_types][item].get('branch_id')]][depts_by_types] = {}
+            result[branches[staff_data[depts_by_types][item].get('branch_id')]][depts_by_types][item] = staff_data[depts_by_types][item]
+    staff_data = result
     return staff_data
 
 
@@ -186,20 +204,25 @@ def process_stable_staff_data(
 
 def process_documents_range_by_busy_type(
     staff_documents_data: Cursor | list,
+    depts: list,
+    branches: list
 ) -> dict[str, dict[str, Any]]:
     """
     Рассчитывает количество пропусков по типам за период.
 
-    :returns: {"absence_type": {"staff_id": {"name": "staff_name", "count": value}}}
+    :returns: {"branch": {"absence_type": {"staff_id": {"name": "staff_name", "count": value}}}}
     """
     processed_data = {}
+    # добавляем структуру филиалов
+    for branch in branches:
+        processed_data[branch] = {}
     for document in staff_documents_data:
         try:
             departments = document["departments"]
             for dept_id in departments:
                 absence_data = departments[dept_id]["absence"]
                 for absence, data in absence_data.items():
-                    absence_type_data = processed_data.setdefault(absence, {})
+                    absence_type_data = processed_data[depts[dept_id]['branch_id']].setdefault(absence, {})
                     if data is not None:
                         for key, value in data.items():
                             staff_info = absence_type_data.setdefault(key, {"count": 0})
@@ -212,26 +235,32 @@ def process_documents_range_by_busy_type(
             )
             logging.error(message)
             flash(message, "danger")
-    for busy_type in processed_data:
-        processed_data[busy_type] = dict(
-            sorted(
-                processed_data[busy_type].items(),
-                key=lambda x: x[1].get("count"),
-                reverse=True,
+    for branch in processed_data:
+        for busy_type in processed_data[branch]:
+            processed_data[branch][busy_type] = dict(
+                sorted(
+                    processed_data[branch][busy_type].items(),
+                    key=lambda x: x[1].get("count"),
+                    reverse=True,
+                )
             )
-        )
     return processed_data
 
 
 def process_documents_range_by_staff_id(
     staff_documents_data: Cursor | list,
+    depts: list,
+    branches: list
 ) -> dict[str, dict[str, Any]]:
     """
     Рассчитывает количество пропусков по сотрудникам за период.
 
-    :returns: {"staff_id" :{"name": "staff_name", "absence": {"absence_type": value}}}
+    :returns: {"branch": {"staff_id" :{"name": "staff_name", "absence": {"absence_type": value}}}}
     """
     processed_data = {}
+    # добавляем структуру филиалов
+    for branch in branches:
+        processed_data[branch] = {}
     for document in staff_documents_data:
         try:
             departments = document["departments"]
@@ -240,7 +269,7 @@ def process_documents_range_by_staff_id(
                 for absence, staff_data in absence_data.items():
                     if staff_data is not None:
                         for key, value in staff_data.items():
-                            staff_info = processed_data.setdefault(
+                            staff_info = processed_data[depts[dept_id]['branch_id']].setdefault(
                                 key, {"absence": {}, "total": 0}
                             )
                             staff_info["name"] = value
@@ -255,7 +284,9 @@ def process_documents_range_by_staff_id(
             )
             logging.error(message)
             flash(message, "danger")
-    return dict(sorted(processed_data.items(), key=lambda x: x[1].get("name")))
+    for branch in branches:
+        processed_data[branch] = dict(sorted(processed_data[branch].items(), key=lambda x: x[1].get("name")))
+    return processed_data
 
 
 async def get_students_data(group_id: str | int) -> list:
@@ -477,3 +508,39 @@ async def lesson_skips_processor(
         )
         lesson_actions["add"] += add_count
     return lesson_actions
+
+
+async def get_departments_by_branches():
+    """Возвращает список подразделений, разбитый по филиалам"""
+
+    # TODO говнокод, можно улучшить + учесть вариат > 1 филиала
+    departments = {}
+    departments_service = get_db_apeks_state_departments_service()
+    if has_permission(PermissionsConfig.USER_HEAD_OFFICE_PERMISSION):
+        departments.update(await departments_service.get_departments(branch_id='0'))
+    if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
+        departments.update(await departments_service.get_departments(branch_id='1'))
+    return departments
+        
+
+async def get_branches():
+    """Возвращает список филиалов"""
+
+    # TODO тоже говнокод
+    branches = {}
+    if has_permission(PermissionsConfig.USER_HEAD_OFFICE_PERMISSION):
+        # получить название головного подразделения
+        system_settings_service = get_apeks_db_system_settings_service()
+        raw_settings = await system_settings_service.get()
+        for item in raw_settings:
+            if item['setting'] == 'system.ou.short_name':
+                branches['0'] = item['value']
+                break
+    if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
+        # получить названия филиалов
+        system_branches_service = get_apeks_db_system_branches_service()
+        raw_branches = await system_branches_service.get()
+        for branch in raw_branches:
+            branches[branch['id']] = branch['name']
+    return branches
+

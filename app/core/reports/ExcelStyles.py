@@ -48,3 +48,5 @@ class ExcelStyle(object):
     BaseBold.alignment = Alignment(wrap_text=True)
 
     GreyFill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+    DarkFill = PatternFill(start_color="888888", end_color="888888", fill_type="solid")
+    

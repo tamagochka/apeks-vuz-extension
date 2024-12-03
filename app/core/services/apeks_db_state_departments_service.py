@@ -25,7 +25,7 @@ class ApeksDbStateDepartmentsService(ApeksApiDbService):
     async def get_departments(
         self,
         department_filter: str = None,
-        branch_id: str | int | None = ApeksConfig.BRANCH_ID
+        branch_id: str = None
     ) -> dict:
         """
         Получение информации о подразделениях.
@@ -49,7 +49,8 @@ class ApeksDbStateDepartmentsService(ApeksApiDbService):
         groups_by_type = {}
         departments_groups = {}
         for dept in state_departments:
-            if branch_id == dept.get('branch_id'):
+            branch = dept.get('branch_id') if dept.get('branch_id') else '0'
+            if branch_id == branch:
                 if dept.get("type"):
                     if dept.get("contains_staff") == "0":
                         dept_type = ApeksConfig.DEPT_TYPES[dept.get("type")]
@@ -75,6 +76,7 @@ class ApeksDbStateDepartmentsService(ApeksApiDbService):
                             "full": dept.get("name"),
                             "short": dept.get("name_short"),
                             "type": group_type,
+                            "branch_id": dept.get("branch_id") if dept.get('branch_id') else '0'
                         }
 
         logging.debug("Информация о подразделениях успешно передана")
