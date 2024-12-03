@@ -42,7 +42,9 @@ def generate_stable_staff_report(db_data: dict | None, busy_types: dict, branche
         for branch in branches:
             dept_by_branches[branches[branch]] = {}
         for dept_id, dept in db_data['departments'].items():
-            dept_by_branches[branches[departments[dept_id]['branch_id']]][dept_id] = dept
+            if dept_id in departments:
+                if departments[dept_id]['branch_id'] in branches:
+                    dept_by_branches[branches[departments[dept_id]['branch_id']]][dept_id] = dept
         workdate = db_data.get("date")
         title = f"Строевая записка постоянного состава за {workdate}"
         wb = Workbook()
