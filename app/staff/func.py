@@ -222,12 +222,13 @@ def process_documents_range_by_busy_type(
             for dept_id in departments:
                 absence_data = departments[dept_id]["absence"]
                 for absence, data in absence_data.items():
-                    absence_type_data = processed_data[depts[dept_id]['branch_id']].setdefault(absence, {})
-                    if data is not None:
-                        for key, value in data.items():
-                            staff_info = absence_type_data.setdefault(key, {"count": 0})
-                            staff_info["count"] += 1
-                            staff_info["name"] = value
+                    if dept_id in depts:
+                        absence_type_data = processed_data[depts[dept_id]['branch_id']].setdefault(absence, {})
+                        if data is not None:
+                            for key, value in data.items():
+                                staff_info = absence_type_data.setdefault(key, {"count": 0})
+                                staff_info["count"] += 1
+                                staff_info["name"] = value
         except KeyError:
             message = (
                 f"Не удалось прочитать документ {document.get('_id')}. "
@@ -269,14 +270,15 @@ def process_documents_range_by_staff_id(
                 for absence, staff_data in absence_data.items():
                     if staff_data is not None:
                         for key, value in staff_data.items():
-                            staff_info = processed_data[depts[dept_id]['branch_id']].setdefault(
-                                key, {"absence": {}, "total": 0}
-                            )
-                            staff_info["name"] = value
-                            staff_info["absence"][absence] = (
-                                staff_info["absence"].get(absence, 0) + 1
-                            )
-                            staff_info["total"] += 1
+                            if dept_id in depts:
+                                staff_info = processed_data[depts[dept_id]['branch_id']].setdefault(
+                                    key, {"absence": {}, "total": 0}
+                                )
+                                staff_info["name"] = value
+                                staff_info["absence"][absence] = (
+                                    staff_info["absence"].get(absence, 0) + 1
+                                )
+                                staff_info["total"] += 1
         except KeyError:
             message = (
                 f"Не удалось прочитать документ {document.get('_id')}. "
