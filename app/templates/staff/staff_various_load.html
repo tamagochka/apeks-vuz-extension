@@ -30,11 +30,17 @@
             <table class="table table-sm mt-3">
               {% if groups_data %}
                 {% for branch in branches %}
-                  <thead>
-                    <tr>
-                      <th class="table-dark text-center mb-1 text-uppercase" colspan="5">{{ branches[branch] }}</th>
-                    </tr>
-                  </thead>
+                  {% set ns = namespace(l = 0) %}
+                  {% for items in groups_data.values()|selectattr('branch_id', 'in', branch) %}
+                    {% set ns.l = ns.l + 1 %}
+                  {% endfor%}
+                  {% if ns.l != 0 %}
+                    <thead>
+                      <tr>
+                        <th class="table-dark text-center mb-1 text-uppercase" colspan="5">{{ branches[branch] }}</th>
+                      </tr>
+                    </thead>
+                  {% endif %}
                   {% for dept_data in groups_data.values()|selectattr('branch_id', 'in', branch) %}
                     <thead>
                       <tr>
