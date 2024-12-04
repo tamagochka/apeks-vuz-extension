@@ -816,6 +816,9 @@ async def staff_various_load():
     document_data = staff_various_service.get(
         query_filter={"date": working_date.isoformat(), "daytime": daytime}
     )
+
+
+
     if not document_data:
         staff_various_service.make_blank_document(working_date)
         document_data = staff_various_service.get(
@@ -826,7 +829,14 @@ async def staff_various_load():
     groups_data = staff_various_groups_data_filter(
         await student_service.get(), allowed_faculty_service.list()
     )
+
+    # print('////////////////////////////////////////////////////////////////\n')
+    # print(await student_service.get())
+    # print(allowed_faculty_service.list()[0].name)
+    # print('////////////////////////////////////////////////////////////////\n')
+
     groups_data = process_apeks_various_group_data(groups_data, document_data)
+    # print(groups_data)
     if request.method == "POST" and form.validate_on_submit():
         if request.form.get("finish_edit"):
             result = staff_various_service.change_status(
@@ -860,6 +870,7 @@ async def staff_various_load():
                     daytime=daytime.value,
                 )
             )
+    branches = await get_branches()
     return render_template(
         "staff/staff_various_load.html",
         active="staff",
@@ -867,6 +878,7 @@ async def staff_various_load():
         date=working_date,
         daytime=daytime.value,
         groups_data=groups_data,
+        branches=branches,
         doc_status=document_data.get("status"),
     )
 

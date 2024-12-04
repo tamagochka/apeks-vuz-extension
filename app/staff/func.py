@@ -342,6 +342,9 @@ def staff_various_groups_data_filter(
     if groups_data.get("groups"):
         for faculty in allowed_faculty:
             faculty_data = groups_data["groups"].get(str(faculty.apeks_id))
+            # заменяем None в banch_id на 0:
+            if not groups_data["groups"].get(str(faculty.apeks_id))['branch_id']:
+                groups_data["groups"].get(str(faculty.apeks_id))['branch_id'] = '0'
             if faculty_data is not None:
                 if faculty_data.get("archive"):
                     del faculty_data["archive"]
