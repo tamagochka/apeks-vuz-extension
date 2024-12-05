@@ -366,6 +366,12 @@ async def staff_allowed_faculty_add():
         faculty_dict = dict(form.apeks_id.choices)
         apeks_id = int(request.form.get("apeks_id"))
         name = faculty_dict.get(apeks_id)
+        
+        branch_id = '1'
+        if not apeks_groups_data['groups'][str(apeks_id)]['branch_id']:
+            branch_id = '0'
+
+
         faculty_service.create(
             apeks_id=apeks_id,
             name=name,
@@ -816,9 +822,6 @@ async def staff_various_load():
     document_data = staff_various_service.get(
         query_filter={"date": working_date.isoformat(), "daytime": daytime}
     )
-
-
-
     if not document_data:
         staff_various_service.make_blank_document(working_date)
         document_data = staff_various_service.get(
@@ -829,14 +832,7 @@ async def staff_various_load():
     groups_data = staff_various_groups_data_filter(
         await student_service.get(), allowed_faculty_service.list()
     )
-
-    # print('////////////////////////////////////////////////////////////////\n')
-    # print(await student_service.get())
-    # print(allowed_faculty_service.list()[0].name)
-    # print('////////////////////////////////////////////////////////////////\n')
-
     groups_data = process_apeks_various_group_data(groups_data, document_data)
-    # print(groups_data)
     if request.method == "POST" and form.validate_on_submit():
         if request.form.get("finish_edit"):
             result = staff_various_service.change_status(
@@ -1063,5 +1059,22 @@ async def staff_various_file_report(date, daytime):
         item.short_name: item.sort for item in allowed_faculty_service.list()
     }
     report_data = get_various_report_data(document_data, faculty_data)
+
+    branches = await get_branches()
+
+    student_service = get_apeks_schedule_schedule_student_service()
+    groups_data = staff_various_groups_data_filter(
+        await student_service.get(), allowed_faculty_service.list()
+    )
+
+
+    # print('++++++++++++++++++++++++++++++')
+    # print(groups_data)
+    # print('++++++++++++++++++++++++++++++')
+    # print(faculty_data)
+    # print('++++++++++++++++++++++++++++++')
+
+
+
     filename = generate_various_staff_report(report_data, busy_types, illness_types)
     return redirect(url_for("main.get_file", filename=filename))
