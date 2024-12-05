@@ -366,17 +366,15 @@ async def staff_allowed_faculty_add():
         faculty_dict = dict(form.apeks_id.choices)
         apeks_id = int(request.form.get("apeks_id"))
         name = faculty_dict.get(apeks_id)
-        
         branch_id = '1'
         if not apeks_groups_data['groups'][str(apeks_id)]['branch_id']:
             branch_id = '0'
-
-
         faculty_service.create(
             apeks_id=apeks_id,
             name=name,
             short_name=request.form.get("short_name"),
             sort=request.form.get("sort"),
+            branch_id=branch_id
         )
         flash(
             f"Запись {name} успешно добавлена",
@@ -1060,12 +1058,12 @@ async def staff_various_file_report(date, daytime):
     }
     report_data = get_various_report_data(document_data, faculty_data)
 
-    branches = await get_branches()
+    # branches = await get_branches()
 
-    student_service = get_apeks_schedule_schedule_student_service()
-    groups_data = staff_various_groups_data_filter(
-        await student_service.get(), allowed_faculty_service.list()
-    )
+    # student_service = get_apeks_schedule_schedule_student_service()
+    # groups_data = staff_various_groups_data_filter(
+    #     await student_service.get(), allowed_faculty_service.list()
+    # )
 
 
     # print('++++++++++++++++++++++++++++++')
