@@ -470,22 +470,10 @@ async def staff_info():
         if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
             departments.update(await departments_service.get_departments(branch_id='1'))
         
-        print('-------------------------------')
-        print(staff_stable_data)
-        print('-------------------------------')
-
-
-
         # TODO: добавить в staff_stable_data разбивку по филиалам, к которым принадлежат подразделения
         for depts_by_type in staff_stable_data['departments_by_type']:
             for depts in staff_stable_data['departments_by_type'][depts_by_type]:
                 depts['branch_id'] = departments[depts['id']]['branch_id']
-
-
-        print('-------------------------------')
-        print(staff_stable_data)
-        print('-------------------------------')
-
         
         staff_history_service = get_db_apeks_state_staff_history_service()
         staff_history = data_processor(
