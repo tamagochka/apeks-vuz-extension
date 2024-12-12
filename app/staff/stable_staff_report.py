@@ -73,93 +73,97 @@ def generate_stable_staff_report(db_data: dict | None, busy_types: dict, branche
         headers = {"Подразделение": 15, "По списку": 4, "В строю": 4, "Отсутствуют": 4}
 
         row += 1
-        addon_headers = []
-        addon_values = []
-        total_staff = 0
         for branch in dept_by_branches:
-            # добавляем название филиала
-            ws.cell(row, 1).value = branch
-            ws.cell(row, 1).style = ExcelStyle.Header
-            ws.cell(row, 1).fill = ExcelStyle.DarkFill
-            ws.cell(row, 1).font = Font(color='FFFFFF', bold=True)
-            ws.cell(row, 1).alignment = Alignment(
-                horizontal="center",
-                vertical="center",
-                wrap_text=True,
-                shrink_to_fit=True
-            )
-            row_to_merge.append(row)
-            row += 1
-            for _, dept_type in ApeksConfig.DEPT_TYPES.items():
-                ws.cell(row, 1).value = dept_type
+            if len(dept_by_branches[branch]) > 0:
+                total_staff = 0
+                addon_headers = []
+                addon_values = []
+                # добавляем название филиала
+                ws.cell(row, 1).value = branch
                 ws.cell(row, 1).style = ExcelStyle.Header
+                ws.cell(row, 1).fill = ExcelStyle.DarkFill
+                ws.cell(row, 1).font = Font(color='FFFFFF', bold=True)
                 ws.cell(row, 1).alignment = Alignment(
                     horizontal="center",
                     vertical="center",
                     wrap_text=True,
-                    shrink_to_fit=True,
+                    shrink_to_fit=True
                 )
                 row_to_merge.append(row)
                 row += 1
-                for dept_id, dept in sorted(
-                    dept_by_branches[branch].items(), key=lambda x: x[1]["name"]
-                ):
-                    if dept.get("type") == dept_type:
-                        ws.cell(row, 1).value = dept.get("name")
-                        ws.cell(row, 1).style = ExcelStyle.BaseBold
-                        dept_total = dept.get("total")
-                        total_staff += dept_total
-                        ws.cell(row, 2).value = dept_total
-                        ws.cell(row, 2).style = ExcelStyle.Number
-                        ws.cell(
-                            row, 3
-                        ).value = (f"={ws.cell(row, 2).column_letter}{row}"
-                                f"-{ws.cell(row, 4).column_letter}{row}")
-                        ws.cell(row, 3).style = ExcelStyle.Number
-                        ws.cell(row, 4).value = (
-                            sum(len(i) for i in dept["absence"].values())
-                            if dept.get("absence")
-                            else 0
+                for _, dept_type in ApeksConfig.DEPT_TYPES.items():
+                    
+                        ws.cell(row, 1).value = dept_type
+                        ws.cell(row, 1).style = ExcelStyle.Header
+                        ws.cell(row, 1).alignment = Alignment(
+                            horizontal="center",
+                            vertical="center",
+                            wrap_text=True,
+                            shrink_to_fit=True,
                         )
-                        ws.cell(row, 4).style = ExcelStyle.Number
-                        absence_info = dept.get("absence")
-                        if absence_info:
-                            for header in absence_info:
-                                if header not in addon_headers:
-                                    addon_headers.append(header)
-                                    addon_values.append(0)
-                                header_index = addon_headers.index(header)
-                                ws.cell(
-                                    row, len(headers) + header_index + 1
-                                ).value = "\n".join(absence_info[header].values())
-                                ws.cell(
-                                    row, len(headers) + header_index + 1
-                                ).style = ExcelStyle.Number
-                                addon_values[header_index] += len(
-                                    absence_info[header].values()
-                                )
+                        row_to_merge.append(row)
                         row += 1
-        # Total
-        ws.cell(row, 1).value = "Итого"
-        ws.cell(row, 1).style = ExcelStyle.Header
-        ws.cell(row, 1).alignment = Alignment(
-            horizontal="center", vertical="center", wrap_text=True, shrink_to_fit=True
-        )
-        row_to_merge.append(row)
-        row += 1
-        ws.cell(row, 1).value = "Итого"
-        ws.cell(row, 1).style = ExcelStyle.BaseBold
-        ws.cell(row, 2).value = total_staff
-        ws.cell(row, 2).style = ExcelStyle.Number
-        ws.cell(row, 3).value = total_staff - sum(addon_values)
-        ws.cell(row, 3).style = ExcelStyle.Number
-        ws.cell(row, 4).value = sum(addon_values)
-        ws.cell(row, 4).style = ExcelStyle.Number
-        column = 5
-        for value in addon_values:
-            ws.cell(row, column).value = value
-            ws.cell(row, column).style = ExcelStyle.Number
-            column += 1
+                        for dept_id, dept in sorted(
+                            dept_by_branches[branch].items(), key=lambda x: x[1]["name"]
+                        ):
+                            if dept.get("type") == dept_type:
+                                # count_depts += 1
+                                ws.cell(row, 1).value = dept.get("name")
+                                ws.cell(row, 1).style = ExcelStyle.BaseBold
+                                dept_total = dept.get("total")
+                                total_staff += dept_total
+                                ws.cell(row, 2).value = dept_total
+                                ws.cell(row, 2).style = ExcelStyle.Number
+                                ws.cell(
+                                    row, 3
+                                ).value = (f"={ws.cell(row, 2).column_letter}{row}"
+                                        f"-{ws.cell(row, 4).column_letter}{row}")
+                                ws.cell(row, 3).style = ExcelStyle.Number
+                                ws.cell(row, 4).value = (
+                                    sum(len(i) for i in dept["absence"].values())
+                                    if dept.get("absence")
+                                    else 0
+                                )
+                                ws.cell(row, 4).style = ExcelStyle.Number
+                                absence_info = dept.get("absence")
+                                if absence_info:
+                                    for header in absence_info:
+                                        if header not in addon_headers:
+                                            addon_headers.append(header)
+                                            addon_values.append(0)
+                                        header_index = addon_headers.index(header)
+                                        ws.cell(
+                                            row, len(headers) + header_index + 1
+                                        ).value = "\n".join(absence_info[header].values())
+                                        ws.cell(
+                                            row, len(headers) + header_index + 1
+                                        ).style = ExcelStyle.Number
+                                        addon_values[header_index] += len(
+                                            absence_info[header].values()
+                                        )
+                                row += 1
+                # Total
+                ws.cell(row, 1).value = "Итого"
+                ws.cell(row, 1).style = ExcelStyle.Header
+                ws.cell(row, 1).alignment = Alignment(
+                    horizontal="center", vertical="center", wrap_text=True, shrink_to_fit=True
+                )
+                row_to_merge.append(row)
+                row += 1
+                ws.cell(row, 1).value = "Итого"
+                ws.cell(row, 1).style = ExcelStyle.BaseBold
+                ws.cell(row, 2).value = total_staff
+                ws.cell(row, 2).style = ExcelStyle.Number
+                ws.cell(row, 3).value = total_staff - sum(addon_values)
+                ws.cell(row, 3).style = ExcelStyle.Number
+                ws.cell(row, 4).value = sum(addon_values)
+                ws.cell(row, 4).style = ExcelStyle.Number
+                column = 5
+                for value in addon_values:
+                    ws.cell(row, column).value = value
+                    ws.cell(row, column).style = ExcelStyle.Number
+                    column += 1
+                row += 1
 
         # Создаем заголовки
         row = 2
