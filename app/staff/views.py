@@ -1054,25 +1054,9 @@ async def staff_various_file_report(date, daytime):
     illness_types_service = get_staff_various_illness_types_service()
     illness_types = {item.slug: item.name for item in illness_types_service.list()}
     faculty_data = {
-        item.short_name: item.sort for item in allowed_faculty_service.list()
+        item.short_name: [item.sort, item.branch_id] for item in allowed_faculty_service.list()
     }
     report_data = get_various_report_data(document_data, faculty_data)
-
-    # branches = await get_branches()
-
-    # student_service = get_apeks_schedule_schedule_student_service()
-    # groups_data = staff_various_groups_data_filter(
-    #     await student_service.get(), allowed_faculty_service.list()
-    # )
-
-
-    # print('++++++++++++++++++++++++++++++')
-    # print(groups_data)
-    # print('++++++++++++++++++++++++++++++')
-    # print(faculty_data)
-    # print('++++++++++++++++++++++++++++++')
-
-
-
-    filename = generate_various_staff_report(report_data, busy_types, illness_types)
+    branches = await get_branches()
+    filename = generate_various_staff_report(report_data, busy_types, illness_types, branches)
     return redirect(url_for("main.get_file", filename=filename))
