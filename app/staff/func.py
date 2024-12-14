@@ -438,6 +438,9 @@ def process_document_various_staff_data(
         faculty: staff_data["faculty_data"][faculty]
         for faculty in sorted(staff_data["faculty_data"], key=sort_faculty)
     }
+    # добавляем информацию о филиале к факультету
+    for item, value in staff_data['faculty_data'].items():
+        value['branch_id'] = faculty_names[item][1]
 
     for faculty in staff_data["faculty_data"]:
         staff_data["total"] += staff_data["faculty_data"][faculty]["total"]

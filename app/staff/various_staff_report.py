@@ -232,11 +232,7 @@ def generate_various_staff_report(
             )
             # добавляем заголовок филиала
             write_cell_data(header_rows["branches"], start_col, branches[branch], style=ExcelStyle.BaseBold)
-            
-            
             ws.cell(header_rows["branches"], start_col).font = Font(color='FFFFFF', bold=True)
-
-
             ws.cell(header_rows["branches"], start_col).alignment = Alignment(wrapText=True, horizontal="center", vertical="center")
             # объединяем ячейки заголовка филиалов
             ws.merge_cells(

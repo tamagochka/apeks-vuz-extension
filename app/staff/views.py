@@ -457,24 +457,29 @@ async def staff_info():
         if staff_stable_document
         else None
     )
-    staff_stable_data = process_document_stable_staff_data(staff_stable_document)
+
+    departments_service = get_db_apeks_state_departments_service()
+    departments = {}
+    # TODO говнокод, можно улучшить
+    # к какому филиалу есть доступ у пользователя
+    if has_permission(PermissionsConfig.USER_HEAD_OFFICE_PERMISSION):
+        departments.update(await departments_service.get_departments(branch_id='0'))
+    if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
+        departments.update(await departments_service.get_departments(branch_id='1'))
+    for dept, dept_data in staff_stable_document['departments'].items():
+        dept_data['branch_id'] = departments[dept]['branch_id']
+    branches = await get_branches()
+
+    staff_stable_document_by_branches = {}
+    for branch in branches:
+        staff_stable_document_by_branches[branch] = {'departments': {}}
+    for dept, dept_data in staff_stable_document['departments'].items():
+        staff_stable_document_by_branches[dept_data['branch_id']]['departments'][dept] = dept_data
+    staff_stable_data_by_branches = {}
+    for branch in branches:
+        staff_stable_data_by_branches[branch] = process_document_stable_staff_data(staff_stable_document_by_branches[branch])
+
     if current_date == dt.date.today().isoformat() and staff_stable_document:
-        departments_service = get_db_apeks_state_departments_service()
-
-
-        departments = {}
-        # TODO говнокод, можно улучшить
-        # к какому филиалу есть доступ у пользователя
-        if has_permission(PermissionsConfig.USER_HEAD_OFFICE_PERMISSION):
-            departments.update(await departments_service.get_departments(branch_id='0'))
-        if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
-            departments.update(await departments_service.get_departments(branch_id='1'))
-        
-        # TODO: добавить в staff_stable_data разбивку по филиалам, к которым принадлежат подразделения
-        for depts_by_type in staff_stable_data['departments_by_type']:
-            for depts in staff_stable_data['departments_by_type'][depts_by_type]:
-                depts['branch_id'] = departments[depts['id']]['branch_id']
-        
         staff_history_service = get_db_apeks_state_staff_history_service()
         staff_history = data_processor(
             await staff_history_service.get_staff_for_date(dt.date.today()),
@@ -512,7 +517,7 @@ async def staff_info():
     staff_various_service = get_staff_various_document_service()
     allowed_faculty_service = get_staff_allowed_faculty_service()
     faculties_data = {
-        item.short_name: item.sort for item in allowed_faculty_service.list()
+        item.short_name: [item.sort, item.branch_id] for item in allowed_faculty_service.list()
     }
 
     # Данные для таблицы по переменному составу
@@ -529,6 +534,7 @@ async def staff_info():
             various_data.setdefault(faculty, {})
             various_data[faculty][daytime.value] = faculty_data
 
+    
     return render_template(
         "staff/staff_info.html",
         active="staff",
@@ -536,10 +542,11 @@ async def staff_info():
         date=current_date,
         stable_busy_types=stable_busy_types,
         department_types=ApeksConfig.DEPT_TYPES.values(),
-        staff_stable_data=staff_stable_data,
-        document_stable_status=document_stable_status,
-        various_data=various_data,
-        military_data=military_data,
+        staff_stable_data_by_branches=staff_stable_data_by_branches,  # инфа по постоянному составу есть поле branch_id
+        document_stable_status=document_stable_status,  # статус документа - редактируется/завершен
+        various_data=various_data,  # инфа по переменному составу
+        military_data=military_data,  # TODO инфа под ярлыками надо поправить, пишет 0
+        branches=branches
     )
 
 
