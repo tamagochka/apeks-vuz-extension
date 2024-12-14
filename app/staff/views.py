@@ -466,19 +466,19 @@ async def staff_info():
         departments.update(await departments_service.get_departments(branch_id='0'))
     if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
         departments.update(await departments_service.get_departments(branch_id='1'))
-    for dept, dept_data in staff_stable_document['departments'].items():
-        dept_data['branch_id'] = departments[dept]['branch_id']
-    branches = await get_branches()
-
+    branches = await get_branches()    
     staff_stable_document_by_branches = {}
-    for branch in branches:
-        staff_stable_document_by_branches[branch] = {'departments': {}}
     for dept, dept_data in staff_stable_document['departments'].items():
-        staff_stable_document_by_branches[dept_data['branch_id']]['departments'][dept] = dept_data
+        if departments.get(dept):
+            if staff_stable_document_by_branches.get(departments[dept]['branch_id']):
+                staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
+            else:
+                staff_stable_document_by_branches.setdefault(departments[dept]['branch_id'], {'departments': {}})
+                staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
     staff_stable_data_by_branches = {}
     for branch in branches:
-        staff_stable_data_by_branches[branch] = process_document_stable_staff_data(staff_stable_document_by_branches[branch])
-
+        if staff_stable_document_by_branches.get(branch):
+            staff_stable_data_by_branches[branch] = process_document_stable_staff_data(staff_stable_document_by_branches[branch])
     if current_date == dt.date.today().isoformat() and staff_stable_document:
         staff_history_service = get_db_apeks_state_staff_history_service()
         staff_history = data_processor(
@@ -487,9 +487,6 @@ async def staff_info():
         )
         state_vacancies_service = get_apeks_db_state_vacancies_service()
         state_vacancies = data_processor(await state_vacancies_service.list())
-
-        branches = await get_branches()
-
         stable_data = process_apeks_stable_staff_data(
             departments,
             staff_history,
@@ -497,30 +494,32 @@ async def staff_info():
             state_vacancies,
             branches
         )
-        military_data = {
-            "staff_military_total": 0,
-            "staff_military_absence": 0,
-            "staff_military_stock": 0,
-        }
-        for dept_type in stable_data:
-            for dept in stable_data[dept_type]:
-                if all(
-                    isinstance(stable_data[dept_type][dept].get(item_name), int)
-                    for item_name in military_data
-                ):
-                    for item_name in military_data:
-                        military_data[item_name] += stable_data[dept_type][dept].get(
-                            item_name
-                        )
+        military_data = {}
+        for branch in branches:
+            military_data.setdefault(branch, {
+                "staff_military_total": 0,
+                "staff_military_absence": 0,
+                "staff_military_stock": 0,
+            })
+            for dept_type in stable_data[branches[branch]]:
+                for dept in stable_data[branches[branch]][dept_type]:
+                    if all(
+                        isinstance(stable_data[branches[branch]][dept_type][dept].get(item_name), int)
+                        for item_name in military_data[branch]
+                    ):
+                        for item_name in military_data[branch]:
+                            military_data[branch][item_name] += stable_data[branches[branch]][dept_type][dept].get(
+                                item_name
+                            )
     else:
         military_data = None
+
+    # Данные для таблицы по переменному составу
     staff_various_service = get_staff_various_document_service()
     allowed_faculty_service = get_staff_allowed_faculty_service()
     faculties_data = {
         item.short_name: [item.sort, item.branch_id] for item in allowed_faculty_service.list()
     }
-
-    # Данные для таблицы по переменному составу
     various_data = {"total": {}}
     for daytime in VariousStaffDaytimeType:
         data = process_document_various_staff_data(

@@ -52,8 +52,8 @@
                               </div>
                               <div class="text-center px-3">
                                 <h4 class="fw-bold text-center text-dark mb-0">{{ staff_stable_data_by_branches[branch].get("staff_total") }}</h4>
-                                {% if military_data %}
-                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data.get("staff_military_total") }} атт)</h4>
+                                {% if military_data[branch] %}
+                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data[branch].get("staff_military_total") }} атт)</h4>
                                 {% endif %}
                                 <p class="text-center text-dark mb-0">По списку</p>
                               </div>
@@ -69,8 +69,8 @@
                               </div>
                               <div class="text-center px-3">
                                 <h4 class="fw-bold text-center text-dark mb-0">{{ staff_stable_data_by_branches[branch].get("staff_stock") }}</h4>
-                                {% if military_data %}
-                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data.get("staff_military_stock") }} атт)</h4>
+                                {% if military_data[branch] %}
+                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data[branch].get("staff_military_stock") }} атт)</h4>
                                 {% endif %}
                                 <p class="text-center text-dark mb-0">В строю</p>
                               </div>
@@ -86,8 +86,8 @@
                               </div>
                               <div class="px-3">
                                 <h4 class="fw-bold text-dark mb-0">{{ staff_stable_data_by_branches[branch].get("staff_absence") }}</h4>
-                                {% if military_data %}
-                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data.get("staff_military_absence") }} атт)</h4>
+                                {% if military_data[branch] %}
+                                  <h4 class="fw-bold text-center text-primary mb-0">({{ military_data[branch].get("staff_military_absence") }} атт)</h4>
                                 {% endif %}
                                 <p class="text-dark mb-0">Отсутствуют</p>
                               </div>
