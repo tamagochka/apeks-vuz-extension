@@ -457,7 +457,6 @@ async def staff_info():
         if staff_stable_document
         else None
     )
-
     departments_service = get_db_apeks_state_departments_service()
     departments = {}
     # TODO говнокод, можно улучшить
@@ -466,19 +465,21 @@ async def staff_info():
         departments.update(await departments_service.get_departments(branch_id='0'))
     if has_permission(PermissionsConfig.USER_BRANCH_OFFICE_1_PERMISSION):
         departments.update(await departments_service.get_departments(branch_id='1'))
-    branches = await get_branches()    
-    staff_stable_document_by_branches = {}
-    for dept, dept_data in staff_stable_document['departments'].items():
-        if departments.get(dept):
-            if staff_stable_document_by_branches.get(departments[dept]['branch_id']):
-                staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
-            else:
-                staff_stable_document_by_branches.setdefault(departments[dept]['branch_id'], {'departments': {}})
-                staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
+    branches = await get_branches()
     staff_stable_data_by_branches = {}
-    for branch in branches:
-        if staff_stable_document_by_branches.get(branch):
-            staff_stable_data_by_branches[branch] = process_document_stable_staff_data(staff_stable_document_by_branches[branch])
+    if staff_stable_document:
+        staff_stable_document_by_branches = {}
+        for dept, dept_data in staff_stable_document['departments'].items():
+            if departments.get(dept):
+                if staff_stable_document_by_branches.get(departments[dept]['branch_id']):
+                    staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
+                else:
+                    staff_stable_document_by_branches.setdefault(departments[dept]['branch_id'], {'departments': {}})
+                    staff_stable_document_by_branches[departments[dept]['branch_id']]['departments'][dept] = dept_data
+        for branch in branches:
+            if staff_stable_document_by_branches.get(branch):
+                staff_stable_data_by_branches[branch] = process_document_stable_staff_data(staff_stable_document_by_branches[branch])
+    military_data = {}
     if current_date == dt.date.today().isoformat() and staff_stable_document:
         staff_history_service = get_db_apeks_state_staff_history_service()
         staff_history = data_processor(
@@ -494,7 +495,6 @@ async def staff_info():
             state_vacancies,
             branches
         )
-        military_data = {}
         for branch in branches:
             military_data.setdefault(branch, {
                 "staff_military_total": 0,
@@ -512,28 +512,35 @@ async def staff_info():
                                 item_name
                             )
     else:
-        military_data = None
-
+        for branch in branches:
+            military_data.setdefault(branch, None)
     # Данные для таблицы по переменному составу
     staff_various_service = get_staff_various_document_service()
     allowed_faculty_service = get_staff_allowed_faculty_service()
     faculties_data = {
-        item.short_name: [item.sort, item.branch_id] for item in allowed_faculty_service.list()
+        item.short_name: [item.sort, item.branch_id, item.apeks_id] for item in allowed_faculty_service.list()
     }
     various_data = {"total": {}}
+    group_service = get_apeks_load_groups_service()
+    groups = await group_service.list()
     for daytime in VariousStaffDaytimeType:
         data = process_document_various_staff_data(
             staff_various_service.get(
                 query_filter={"date": current_date, "daytime": daytime}
             ),
+            groups,
             faculties_data,
+            branches,
+            departments
         )
         various_data["total"][daytime.value] = data
-        for faculty, faculty_data in data.get("faculty_data", {}).items():
-            various_data.setdefault(faculty, {})
-            various_data[faculty][daytime.value] = faculty_data
+        if data:
+            for branch in branches:
+                various_data.setdefault(branch, {})
+                for faculty, faculty_data in data.get(branch).get("faculty_data", {}).items():
+                    various_data.get(branch).setdefault(faculty, {})
+                    various_data[branch][faculty][daytime.value] = faculty_data
 
-    
     return render_template(
         "staff/staff_info.html",
         active="staff",
