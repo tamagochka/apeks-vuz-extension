@@ -25,7 +25,7 @@ class ApeksDbStateDepartmentsService(ApeksApiDbService):
     async def get_departments(
         self,
         department_filter: str = None,
-        branch_id: str = None
+        branch_id: str = '0'
     ) -> dict:
         """
         Получение информации о подразделениях.
