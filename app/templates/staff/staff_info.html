@@ -173,60 +173,30 @@
           <h4 class="text-center text-black">Переменный состав</h4>
         </div>
       </div>
-      {% set ns1 = namespace(count_tables = 0) %}
-      {% for branch in branches %}
-        {% set ns2 = namespace(plus_table = False) %}
-        {% for daytime in config.DAYTIME_NAME %}
-          {% if various_data.get("total").get(daytime) %}
-            {% if various_data["total"][daytime][branch]['faculty_data'] %}
-              {% set ns2.plus_table = True %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-        {% if ns2.plus_table %}
-          {% set ns1.count_tables = ns1.count_tables + 1 %}
-        {% endif %}
-      {% endfor %}
-      {% if ns1.count_tables != 0 %}
-        {% if ns1.count_tables > 1%}
-          {% set show_wide_tables = True%}
-        {% else %}
-          {% set show_wide_tables = False%}
-        {% endif %}
-        <div class="body:container-fluid text-center">
-          <div class="row align-items-start">
-            {% for branch in branches %}
-              {% set ns = namespace(show_branch_for_various_staff = False) %}
-              {% for daytime in config.DAYTIME_NAME %}
-                {% if various_data["total"][daytime][branch]['faculty_data'] %}
-                  {% set ns.show_branch_for_various_staff = True %}
-                {% endif %}
-              {% endfor %}
-              {% if ns.show_branch_for_various_staff %}
-                <div class="col">
-                  {% if show_branches_for_various_staff %}
-                    <div class="row justify-content-center">
-                      <div class="col">
-                        <h5 class="text-center text-black">{{ branches[branch]}}</h5>
-                      </div>
-                    </div>
-                  {% endif %}
-                  <div class="row justify-content-center">
-                    {% if show_wide_tables %}
-                      <div class="col-md-10 col-xl-12">
-                    {% else %}
-                      <div class="col-md-10 col-xl-8">
-                    {% endif %}
-                      <div class="table-responsive">
-                        <table class="table table-sm">
-                          <thead>
-                            <tr>
-                              <th class="table-primary"></th>
-                              {% for daytime in config.DAYTIME_NAME %}
-                                <th class="text-center table-primary">
-                                  {{ config.DAYTIME_NAME.get(daytime) }}<span> </span>
-                                  <span>
-                                    <a href="{{ url_for('staff.staff_various_load', date=date, daytime=daytime) }}" target="_blank">
+      <div class="body:container-fluid text-center">
+        <div class="row align-items-start">
+          {% for branch in branches %}
+            <div class="col">
+              {% if show_branches_for_various_staff %}
+                <div class="row justify-content-center">
+                  <div class="col">
+                    <h5 class="text-center text-black">{{ branches[branch]}}</h5>
+                  </div>
+                </div>
+              {% endif %}
+              <div class="row justify-content-center">
+                  <div class="col-md-10 col-xl-12">
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead>
+                          <tr>
+                            <th class="table-primary"></th>
+                            {% for daytime in config.DAYTIME_NAME %}
+                              <th class="text-center table-primary">
+                                {{ config.DAYTIME_NAME.get(daytime) }}<span> </span>
+                                <span>
+                                  <a href="{{ url_for('staff.staff_various_load', date=date, daytime=daytime) }}" target="_blank">
+                                    {% if various_data["total"][daytime].get(branch) %}
                                       {% if various_data["total"][daytime][branch].get("status") == config.STAFF_COMPLETED_STATUS %}
                                         <i class="fas fa-check-circle text-success" title="Сформирован"></i>
                                       {% elif various_data["total"][daytime][branch].get("status") == config.STAFF_IN_PROGRESS_STATUS %}
@@ -234,95 +204,114 @@
                                       {% else %}
                                         <i class="fas fa-times-circle text-danger" title="Нет данных"></i>
                                       {% endif %}
-                                    </a>
-                                  </span>
-                                </th>
-                              {% endfor %}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td class="table-secondary text-start"><b>По списку</b></td>
-                              {% for daytime in config.DAYTIME_NAME %}
-                                <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("total", "Нет данных") }}</b></td>
-                              {% endfor %}
-                            </tr>
-                            {% if branch != "total" %}
-                              {% if various_data[branch]|length > 0 %}
-                                {% for faculty, faculty_data in various_data[branch].items() %}
-                                  <tr>
-                                    <td class="text-start">{{ faculty }}</td>
-                                    {% for daytime in config.DAYTIME_NAME %}
-                                      <td class="text-center">{{ faculty_data.get(daytime, {}).get("total", "Нет данных") }}</td>
-                                    {% endfor %}
-                                  </tr>
+                                    {% else %}
+                                      <i class="fas fa-times-circle text-danger" title="Нет данных"></i>
+                                    {% endif %}
+                                  </a>
+                                </span>
+                              </th>
+                            {% endfor %}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td class="table-secondary text-start"><b>По списку</b></td>
+                            {% for daytime in config.DAYTIME_NAME %}
+                              {% if various_data["total"][daytime].get(branch) %}
+                                {% if various_data["total"][daytime].get(branch).get("faculty_data") %}
+                                  <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("total", "Нет данных") }}</b></td>
+                                {% else %}
+                                  <td class="text-center table-secondary"><b>Нет данных</b></td>
+                                {% endif %}
+                              {% else %}
+                                <td class="text-center table-secondary"><b>Нет данных</b></td>
+                              {% endif%}
+                            {% endfor %}
+                          </tr>
+                          {% if various_data[branch]|length > 0 %}
+                            {% for faculty, faculty_data in various_data[branch].items() %}
+                              <tr>
+                                <td class="text-start">{{ faculty }}</td>
+                                {% for daytime in config.DAYTIME_NAME %}
+                                  <td class="text-center">{{ faculty_data.get(daytime, {}).get("total", "Нет данных") }}</td>
                                 {% endfor %}
-                              {% endif %}
-                            {% endif %}
-                            <tr>
-                              <td class="table-secondary text-start"><b>В строю</b></td>
-                              {% for daytime in config.DAYTIME_NAME %}
-                                <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("stock", "Нет данных") }}</b></td>
-                              {% endfor %}
-                            </tr>
-                            {% if branch != "total" %}
-                              {% if various_data[branch]|length > 0 %}
-                                {% for faculty, faculty_data in various_data[branch].items() %}
-                                  <tr>
-                                    <td class="text-start">{{ faculty }}</td>
-                                    {% for daytime in config.DAYTIME_NAME %}
-                                      <td class="text-center">{{ faculty_data.get(daytime, {}).get("stock", "Нет данных") }}</td>
-                                    {% endfor %}
-                                  </tr>
+                              </tr>
+                            {% endfor %}
+                          {% endif %}
+                          <tr>
+                            <td class="table-secondary text-start"><b>В строю</b></td>
+                            {% for daytime in config.DAYTIME_NAME %}
+                              {% if various_data["total"][daytime].get(branch) %}
+                                {% if various_data["total"][daytime].get(branch).get("faculty_data") %}
+                                  <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("stock", "Нет данных") }}</b></td>
+                                {% else %}
+                                  <td class="text-center table-secondary"><b>Нет данных</b></td>
+                                {% endif %}
+                              {% else %}
+                                <td class="text-center table-secondary"><b>Нет данных</b></td>
+                              {% endif%}
+                            {% endfor %}
+                          </tr>
+                          {% if various_data[branch]|length > 0 %}
+                            {% for faculty, faculty_data in various_data[branch].items() %}
+                              <tr>
+                                <td class="text-start">{{ faculty }}</td>
+                                {% for daytime in config.DAYTIME_NAME %}
+                                  {% if various_data["total"][daytime].get(branch) %}
+                                    <td class="text-center">{{ faculty_data.get(daytime, {}).get("stock", "Нет данных") }}</td>
+                                  {% else %}
+                                    <td class="text-center table-secondary"><b>Нет данных</b></td>
+                                  {% endif%}
                                 {% endfor %}
-                              {% endif %}
-                            {% endif %}
-                            <tr>
-                              <td class="table-secondary text-start"><b>Отсутствуют</b></td>
-                              {% for daytime in config.DAYTIME_NAME %}
-                                <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("absence", "Нет данных") }}</b></td>
-                              {% endfor %}
-                            </tr>
-                            {% if branch != "total" %}
-                              {% if various_data[branch]|length > 0 %}
-                                {% for faculty, faculty_data in various_data[branch].items() %}
-                                  <tr>
-                                    <td class="text-start">{{ faculty }}</td>
-                                    {% for daytime in config.DAYTIME_NAME %}
-                                      <td class="text-center">{{ faculty_data.get(daytime, {}).get("absence", "Нет данных") }}</td>
-                                    {% endfor %}
-                                  </tr>
+                              </tr>
+                            {% endfor %}
+                          {% endif %}
+                          <tr>
+                            <td class="table-secondary text-start"><b>Отсутствуют</b></td>
+                            {% for daytime in config.DAYTIME_NAME %}
+                              {% if various_data["total"][daytime].get(branch) %}
+                                {% if various_data["total"][daytime].get(branch).get("faculty_data") %}
+                                  <td class="text-center table-secondary"><b>{{ various_data["total"][daytime][branch].get("absence", "Нет данных") }}</b></td>
+                                {% else %}
+                                  <td class="text-center table-secondary"><b>Нет данных</b></td>
+                                {% endif %}
+                              {% else %}
+                                <td class="text-center table-secondary"><b>Нет данных</b></td>
+                              {% endif%}
+                            {% endfor %}
+                          </tr>
+                          {% if various_data[branch]|length > 0 %}
+                            {% for faculty, faculty_data in various_data[branch].items() %}
+                              <tr>
+                                <td class="text-start">{{ faculty }}</td>
+                                {% for daytime in config.DAYTIME_NAME %}
+                                  <td class="text-center">{{ faculty_data.get(daytime, {}).get("absence", "Нет данных") }}</td>
                                 {% endfor %}
-                              {% endif %}
-                            {% endif %}
-                            <tr>
-                              <td class="table-primary text-start"><b>Отчет</b></td>
-                              {% for daytime in config.DAYTIME_NAME %}
-                                <td class="text-center table-primary">
+                              </tr>
+                            {% endfor %}
+                          {% endif %}
+                          <tr>
+                            <td class="table-primary text-start"><b>Отчет</b></td>
+                            {% for daytime in config.DAYTIME_NAME %}
+                              <td class="text-center table-primary">
+                              {% if various_data["total"][daytime].get(branch) %}  
                                 {% if various_data["total"][daytime][branch].get("status") %}
                                   <a class="btn btn-primary btn-sm fw-bold" role="button"
                                     href="{{ url_for('staff.staff_various_file_report', date=date, daytime=daytime) }}">Отчет</a>
                                 {% endif %}
-                                </td>
-                              {% endfor %}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                              {% endif %}
+                              </td>
+                            {% endfor %}
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
                 </div>
-              {% endif %}
-            {% endfor %}
-          </div>
+              </div>
+            </div>
+          {% endfor %}
         </div>
-      {% else %}
-        <div class="row justify-content-center">
-          <div class="col-md-10 col-xl-8 mt-3">
-            <h5 class="text-center text-black">Нет данных</h5>
-          </div>
-        </div>
-      {% endif %}
+      </div>
       <!-- Постоянный состав: подразделения -->
       {% if document_stable_status and staff_stable_data_by_branches|length != 0 %}
         <div class="row justify-content-center">
