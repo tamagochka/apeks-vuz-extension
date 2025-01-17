@@ -48,7 +48,7 @@ def get_various_report_data(document: dict, faculty_names: dict):
 
     def sort_faculty(faculty_name):
         if faculty_name in faculty_names:
-            return faculty_names[faculty_name]
+            return faculty_names[faculty_name][0]
         return max(faculty_names.values()) + 1
 
     result["faculty_data"] = {
@@ -56,8 +56,8 @@ def get_various_report_data(document: dict, faculty_names: dict):
         for faculty in sorted(result["faculty_data"], key=sort_faculty)
     }
     for faculty, courses_data in result["faculty_data"].items():
-        result["faculty_data"][faculty] = {
-            course: courses_data[course] for course in sorted(courses_data)
+        result["faculty_data"][faculty]['courses_data'] = {
+            course: courses_data['courses_data'][course] for course in sorted(courses_data['courses_data'])
         }
     for faculty in result['faculty_data']:
         result['faculty_data'][faculty]['branch_id'] = faculty_names[faculty][1]
