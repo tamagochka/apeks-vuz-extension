@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from config import ApeksConfig
 from .base_apeks_api_service import ApeksApiDbService
 from ..repository.apeks_api_repository import ApeksApiRepository
+from .apeks_db_state_departments_types_service import get_apeks_db_state_departments_types_service
 
 
 @dataclass
@@ -45,17 +46,34 @@ class ApeksDbStateDepartmentsService(ApeksApiDbService):
             "other": "Иные",
         }
 
+        departments_types_service = get_apeks_db_state_departments_types_service()
+        dept_types = await departments_types_service.list()
+        for dept in state_departments:
+            dept_type = next((tp for tp in dept_types if tp['department_id'] == dept['id']), None)
+            dept['type'] = dept_type.get('type') if dept_type else '0'
+
         # Получаем id групп подразделений по типам, и группы подразделений
         groups_by_type = {}
         departments_groups = {}
         for dept in state_departments:
             branch = dept.get('branch_id') if dept.get('branch_id') else '0'
             if branch_id == branch:
-                if dept.get("type"):
-                    if dept.get("contains_staff") == "0":
-                        dept_type = ApeksConfig.DEPT_TYPES[dept.get("type")]
-                    else:
-                        dept_type = "Иные"
+                # старый код, до обновления апекса, которое вынесло поле type из таблицы state_departments
+                # в отдельную таблицу state_departments_types
+                # if dept.get("type"):
+                #     if dept.get("contains_staff") == "0":  # если подразделение не содержит л/с, то это тип поразделения (Кафедра, Факультет или Подразделение)
+                #         dept_type = ApeksConfig.DEPT_TYPES[dept.get("type")]
+                #     else:  # в противном случае определяем его в категорию "Иные"
+                #         dept_type = "Иные"
+                #     # 
+                #     group_type = groups_by_type.setdefault(dept_type, [])
+                #     group_type.append(dept.get("id"))
+                # else:
+                #     parent_id = dept.get("parent_id") or "Other"
+                #     group = departments_groups.setdefault(parent_id, [])
+                #     group.append(dept)
+                if dept.get("contains_staff") == "0":
+                    dept_type = ApeksConfig.DEPT_TYPES[dept.get("type")]
                     group_type = groups_by_type.setdefault(dept_type, [])
                     group_type.append(dept.get("id"))
                 else:

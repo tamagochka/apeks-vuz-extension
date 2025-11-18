@@ -180,6 +180,7 @@ class ApeksConfig(object):
     # Таблицы базы данных Апекс-ВУЗ, используемые в приложении
     LOAD_GROUPS_TABLE = "load_groups"
     STATE_DEPARTMENTS_TABLE = "state_departments"
+    STATE_DEPARTMENTS_TYPES_TABLE = "state_departments_types"
     STATE_SPECIAL_RANKS = "state_special_ranks"
     STATE_STAFF_FIELD_DATA = "state_staff_field_data"
     STATE_STAFF_HISTORY_TABLE = "state_staff_history"

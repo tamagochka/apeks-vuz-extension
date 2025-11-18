@@ -72,11 +72,11 @@ def generate_stable_staff_report(db_data: dict | None, busy_types: dict, branche
         row = 2
         headers = {"Подразделение": 15, "По списку": 4, "В строю": 4, "Отсутствуют": 4}
 
+        addon_headers = []
         row += 1
         for branch in dept_by_branches:
             if len(dept_by_branches[branch]) > 0:
                 total_staff = 0
-                addon_headers = []
                 addon_values = []
                 # добавляем название филиала
                 ws.cell(row, 1).value = branch
